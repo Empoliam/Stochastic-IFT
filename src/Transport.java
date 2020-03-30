@@ -24,10 +24,10 @@ public class Transport {
 		this.state = state;
 	}
 	
-	@Override
-	public String toString() {
-		return(state + " : " + Double.toString(location) + " : " + Double.toString(tubulin));
-	}
+//	@Override
+//	public String toString() {
+//		return(state + " : " + Double.toString(location) + " : " + Double.toString(tubulin));
+//	}
 	
 	public int getFlagellum() {
 		return flagellum;
@@ -35,6 +35,14 @@ public class Transport {
 	
 	public void setFlagellum(int num) {
 		flagellum = num;
+	}
+	
+	public void setLocation(double location) {
+		this.location = location;
+	}
+
+	public void setTubulin(double tubulin) {
+		this.tubulin = tubulin;		
 	}
 	
 }
