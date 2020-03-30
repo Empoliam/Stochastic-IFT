@@ -10,40 +10,37 @@ import java.util.Random;
 
 public class Main {	
 
-	static final long SEED = 1L;
+	static final long SEED = 0L;
 	static Random RNG = new Random(SEED);
 
-	static final int NFLAG = 2;
+	static final int NFLAG = 2 ;
+	static final boolean SEVER = true;
 
-	static final double v = 2d; //2d
-	static final double D = 2d; //2d
-	static final double da = 0.3/60d; //0.3/60d
-	static final double db = 1.7e-3; //0.3/60
-	static final double k = 1d/60d; //1d/60d
-	static final double a = 2e-4; //2e-4
+	static final int MAX_MOTOR_POOL = 444; //150
+	static final double MAX_TUBULIN_POOL = 84; //30
 
 	//Time
 	static final double tMax = 10000;
 	static final double dt = 0.05;
-
-	//Max motor pool
-	static final int NBASE = 200; //150
-
-	//Tubulin Pool
-	static final double POOLMAX = 38*NFLAG; //30
-	static double POOL = POOLMAX;
 
 	static List<Double> FLAGELLA = new LinkedList<Double>();
 	static List<Transport> IFT = new ArrayList<Transport>();	
 
 	public static void main(String args[]) {
 
+		final double v = 2.5d; //2d
+		final double D = 1.7d; //2d
+		final double da = 3d/60d; //0.3d/60d
+		final double db = 8.5e-4; //1.7e-4
+		final double k = 0.03; //1d/60d
+		final double a = 2.5e-4; //2e-4
+
 		File fileOut = new File("./output/out.csv");
 		fileOut.getParentFile().mkdir();
 		try {
 			BufferedWriter bw = new BufferedWriter(new FileWriter(fileOut));
 
-			for(int x = 0; x < NBASE; x++) {
+			for(int x = 0; x < MAX_MOTOR_POOL; x++) {
 				IFT.add(new Transport());			
 			}
 
@@ -51,7 +48,22 @@ public class Main {
 				FLAGELLA.add(0d);
 			}
 
+			double POOL = MAX_TUBULIN_POOL - usedTubulin();
+
 			for(double t = 0; t < tMax; t += dt) {
+
+				if(SEVER && Math.abs(t - 3000) < dt*0.1) {
+
+					FLAGELLA.set(0, 0d);
+					Iterator<Transport> iterator = IFT.iterator();
+					while(iterator.hasNext()) {
+						Transport T = iterator.next();
+						if(T.getState() != State.POOL && T.getFlagellum() == 0) {
+							iterator.remove();
+						}
+					}
+
+				}
 
 				for(Transport T : IFT) {
 
@@ -63,6 +75,7 @@ public class Main {
 
 							FLAGELLA.set(T.getFlagellum(),FLAGELLA.get(T.getFlagellum())+T.getTubulin());
 							T.setState(State.DIFFUSE);
+							T.setTubulin(0);
 							T.setLocation(FLAGELLA.get(T.getFlagellum()));
 
 						}
@@ -80,6 +93,8 @@ public class Main {
 						if(T.getLocation() < 0) {
 
 							T.setState(State.POOL);
+							T.setLocation(0d);
+							T.setFlagellum(-1);
 
 						}
 
@@ -88,11 +103,14 @@ public class Main {
 				}
 
 				double injProb = k * dt * countFree();
+
 				for(int i  = 0; i < NFLAG; i++) {
 
-					double roll = RNG.nextDouble();
+					double decay = (da+db*tipConcentration(i))*dt;
+					FLAGELLA.set(i, Math.max(0d, FLAGELLA.get(i)-decay));
+					POOL += decay;
 
-					if(roll < injProb) {
+					if(RNG.nextDouble() < injProb) {
 
 						Transport freeTransport = getFreeTransport(); 
 						freeTransport.setState(State.BALLISTIC);
@@ -104,42 +122,26 @@ public class Main {
 
 					}
 
-					double decay = (da+db*tipConcentration(i))*dt;
-					FLAGELLA.set(i, Math.max(0d, FLAGELLA.get(i)-decay));
-
 				}
 
 				//Regenerate proteins
-				if(POOL + usedTubulin() < POOLMAX) {
-					POOL += dt*(POOLMAX/300d);
+				if(POOL < MAX_TUBULIN_POOL-usedTubulin()) {
+					POOL += dt*(MAX_TUBULIN_POOL/300d);
 				}
-				if(IFT.size() < NBASE) {
+
+				if(IFT.size() < MAX_MOTOR_POOL) {
 					double roll = RNG.nextDouble();
-					if(roll < dt*(NBASE/300d)) {
+					if(roll < dt*(MAX_MOTOR_POOL/300d)) {
 						IFT.add(new Transport());
 					}
 				}
-
-				if(Math.abs(t - (tMax/2)) < dt*0.1) {
-
-					FLAGELLA.set(0, 0d);
-					Iterator<Transport> iterator = IFT.iterator();
-					while(iterator.hasNext()) {
-						Transport T = iterator.next();
-						if(T.getState() != State.POOL && T.getFlagellum() == 0) {
-							iterator.remove();
-						}
-					}
-					
-				}
-
 
 
 				bw.append(Double.toString(t));
 				for(Double F : FLAGELLA) {
 					bw.append("," + F);
 				}
-				bw.append("\n");
+				bw.append("," +  POOL + "\n");
 
 			}
 
@@ -188,19 +190,19 @@ public class Main {
 
 		return sum;
 	}
-	
+
 	public static double tipConcentration(int i) {
-		
+
 		int count = 0;
 		for(Transport T : IFT) {
 			if(T.getState() == State.DIFFUSE && 
 					T.getFlagellum() == i && 
-					FLAGELLA.get(i) - T.getLocation() <= 1
+					T.getLocation() > FLAGELLA.get(i) - 1
 					) {
 				count++;
 			}
 		}
-		
+
 		return (double) count;
 	}
 

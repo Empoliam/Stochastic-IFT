@@ -3,7 +3,7 @@ public class Transport {
 	private State state = State.POOL;
 	private double location = 0;
 	private double tubulin = 0;
-	private int flagellum;
+	private int flagellum = -1;
 	
 	public Transport() {
 	}
