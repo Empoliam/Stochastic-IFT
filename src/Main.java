@@ -66,16 +66,16 @@ public class Main {
 				}
 
 				for(int i  = 0; i < NFLAG; i++) {
-					
+
 					double decay = (da+db*tipConcentration(i))*dt;
 					FLAGELLA.set(i, Math.max(0d, FLAGELLA.get(i)-decay));
 					POOL += decay;
-					
+
 				}
-				
+
 				double injProb = k * dt * countFree();
 				for(int i  = 0; i < NFLAG; i++) {
-					
+
 					if(RNG.nextDouble() < injProb) {
 
 						Transport freeTransport = getFreeTransport(); 
@@ -89,25 +89,12 @@ public class Main {
 					}
 
 				}
-				
+
 				for(Transport T : IFT) {
 
 					if(T.getState() == State.BALLISTIC) {
 
 						T.setLocation(T.getLocation()+(v*dt));
-
-					} else if (T.getState() == State.DIFFUSE) {
-
-						double diffuseMovement = RNG.nextGaussian() * Math.sqrt(2*D*dt);
-						T.setLocation(T.getLocation()+diffuseMovement);
-
-					}
-
-				}
-
-				for(Transport T : IFT) {
-
-					if(T.getState() == State.BALLISTIC) {
 
 						if(T.getLocation() > FLAGELLA.get(T.getFlagellum())) {
 
@@ -120,6 +107,9 @@ public class Main {
 
 					} else if (T.getState() == State.DIFFUSE) {
 
+						double diffuseMovement = RNG.nextGaussian() * Math.sqrt(2*D*dt);
+						T.setLocation(T.getLocation()+diffuseMovement);
+
 						if(T.getLocation() > FLAGELLA.get(T.getFlagellum())) {
 							T.setLocation(2*FLAGELLA.get(T.getFlagellum())-T.getLocation());
 						}
@@ -131,11 +121,10 @@ public class Main {
 							T.setFlagellum(-1);
 
 						}
-
+						
 					}
 
 				}
-				
 
 				//Regenerate proteins
 				if(POOL < MAX_TUBULIN_POOL) {
@@ -154,7 +143,7 @@ public class Main {
 				for(Double F : FLAGELLA) {
 					bw.append("," + F);
 				}
-				bw.append("," +  POOL + "\n");
+				bw.append("\n");
 
 			}
 
