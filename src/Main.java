@@ -65,11 +65,49 @@ public class Main {
 
 				}
 
+				for(int i  = 0; i < NFLAG; i++) {
+					
+					double decay = (da+db*tipConcentration(i))*dt;
+					FLAGELLA.set(i, Math.max(0d, FLAGELLA.get(i)-decay));
+					POOL += decay;
+					
+				}
+				
+				double injProb = k * dt * countFree();
+				for(int i  = 0; i < NFLAG; i++) {
+					
+					if(RNG.nextDouble() < injProb) {
+
+						Transport freeTransport = getFreeTransport(); 
+						freeTransport.setState(State.BALLISTIC);
+						freeTransport.setFlagellum(i);
+
+						double tubulin = a * POOL;
+						POOL -= tubulin;
+						freeTransport.setTubulin(tubulin);
+
+					}
+
+				}
+				
 				for(Transport T : IFT) {
 
 					if(T.getState() == State.BALLISTIC) {
 
 						T.setLocation(T.getLocation()+(v*dt));
+
+					} else if (T.getState() == State.DIFFUSE) {
+
+						double diffuseMovement = RNG.nextGaussian() * Math.sqrt(2*D*dt);
+						T.setLocation(T.getLocation()+diffuseMovement);
+
+					}
+
+				}
+
+				for(Transport T : IFT) {
+
+					if(T.getState() == State.BALLISTIC) {
 
 						if(T.getLocation() > FLAGELLA.get(T.getFlagellum())) {
 
@@ -81,10 +119,6 @@ public class Main {
 						}
 
 					} else if (T.getState() == State.DIFFUSE) {
-
-						double diffuseMovement = RNG.nextGaussian() * Math.sqrt(2*D*dt);
-
-						T.setLocation(T.getLocation()+diffuseMovement);
 
 						if(T.getLocation() > FLAGELLA.get(T.getFlagellum())) {
 							T.setLocation(2*FLAGELLA.get(T.getFlagellum())-T.getLocation());
@@ -101,37 +135,16 @@ public class Main {
 					}
 
 				}
-
-				double injProb = k * dt * countFree();
-
-				for(int i  = 0; i < NFLAG; i++) {
-
-					double decay = (da+db*tipConcentration(i))*dt;
-					FLAGELLA.set(i, Math.max(0d, FLAGELLA.get(i)-decay));
-					POOL += decay;
-
-					if(RNG.nextDouble() < injProb) {
-
-						Transport freeTransport = getFreeTransport(); 
-						freeTransport.setState(State.BALLISTIC);
-						freeTransport.setFlagellum(i);
-
-						double tubulin = a * POOL;
-						POOL -= tubulin;
-						freeTransport.setTubulin(tubulin);
-
-					}
-
-				}
+				
 
 				//Regenerate proteins
-				if(POOL < MAX_TUBULIN_POOL-usedTubulin()) {
-					POOL += dt*(MAX_TUBULIN_POOL/300d);
+				if(POOL < MAX_TUBULIN_POOL) {
+					POOL += ((MAX_TUBULIN_POOL)/30000d * dt);
 				}
 
 				if(IFT.size() < MAX_MOTOR_POOL) {
 					double roll = RNG.nextDouble();
-					if(roll < dt*(MAX_MOTOR_POOL/300d)) {
+					if(roll < dt*(MAX_MOTOR_POOL/30000d)) {
 						IFT.add(new Transport());
 					}
 				}
