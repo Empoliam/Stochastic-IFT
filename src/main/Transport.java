@@ -1,3 +1,4 @@
+package main;
 public class Transport {
 
 	private State state = State.POOL;
